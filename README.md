@@ -49,10 +49,42 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-4. Set up environment variables:
+4. Install system dependencies:
+```bash
+# For Debian/Ubuntu
+sudo apt-get update
+sudo apt-get install -y xvfb google-chrome-stable
+
+# For RHEL/CentOS
+sudo yum update
+sudo yum install -y xorg-x11-server-Xvfb google-chrome-stable
+```
+
+5. Set up ChromeDriver:
+```bash
+# Extract included ChromeDriver
+unzip chromedriver-linux64.zip
+chmod +x chromedriver-linux64/chromedriver
+```
+
+6. Set up environment variables:
 ```bash
 cp .env.example .env
-# Edit .env with your configuration
+# Edit .env with your configuration:
+DEBUG=True
+LOG_LEVEL=INFO  # Set to DEBUG for more detailed logs
+```
+
+7. Verify system setup:
+```bash
+# Check Chrome installation
+google-chrome --version
+
+# Check Xvfb
+Xvfb -version
+
+# Verify Python dependencies
+python -c "from selenium import webdriver; from pyvirtualdisplay import Display"
 ```
 
 ## Usage
@@ -131,11 +163,90 @@ black .
 flake8
 ```
 
+## Troubleshooting
+
+### Common Issues and Solutions
+
+1. ChromeDriver Issues:
+   - Error: "ChromeDriver not found"
+     ```bash
+     # Verify ChromeDriver exists and is executable
+     ls -l chromedriver-linux64/chromedriver
+     chmod +x chromedriver-linux64/chromedriver
+     ```
+   - Error: "Chrome not reachable"
+     ```bash
+     # Kill existing Chrome processes
+     pkill -f chrome
+     # Restart the application
+     python main.py
+     ```
+
+2. Display Issues:
+   - Error: "Display not found"
+     ```bash
+     # Check Xvfb is running
+     ps aux | grep Xvfb
+     # Start Xvfb manually if needed
+     Xvfb :99 -screen 0 1920x1080x24 &
+     export DISPLAY=:99
+     ```
+
+3. WhatsApp Web Connection:
+   - Error: "Failed to load WhatsApp Web"
+     - Check internet connection
+     - Verify WhatsApp Web is accessible
+     - Try increasing timeout in .env: `WHATSAPP_TIMEOUT=120`
+   - QR Code Issues:
+     - Ensure temp directory has write permissions
+     - Try scanning QR code with WhatsApp beta app
+
+4. Message Processing:
+   - Error: "Failed to process message"
+     - Check log files for specific error
+     - Verify message format matches commands
+     - Try with DEBUG=True for more details
+
+### Error Recovery Features
+
+The bot includes several automatic recovery mechanisms:
+
+1. Auto-Retry System:
+   - Automatic retry for failed operations
+   - Progressive delay between retries
+   - Maximum retry limits to prevent infinite loops
+
+2. Connection Recovery:
+   - Automatic restart on connection loss
+   - Session recovery after crashes
+   - Graceful cleanup of resources
+
+3. Error Logging:
+   - Detailed error logs in DEBUG mode
+   - Stack traces for debugging
+   - Operation status logging
+
+### Monitoring
+
+Monitor the bot's health through:
+
+1. Log Files:
+   ```bash
+   tail -f bot.log  # If logging to file enabled
+   ```
+
+2. Process Status:
+   ```bash
+   ps aux | grep python  # Check bot process
+   ps aux | grep chrome  # Check browser processes
+   ```
+
 ## Security Notes
 
 - The application uses SQLite for data storage
-- WhatsApp session data is stored locally
-- Ensure proper security measures when deploying to production
+- WhatsApp session data is stored in temporary directories
+- Automatic cleanup of sensitive data
+- Secure error handling to prevent data leaks
 - Use strong passwords and secure environment variables
 
 ## Contributing
